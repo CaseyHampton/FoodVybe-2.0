@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="content-type"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" rel="stylesheet"/>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css" rel="stylesheet"/>
+<style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+<style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+</head>
+<body>
+<div style="padding: 10px; background: #f8f9fa; position: fixed; top: 0; width: 100%; z-index: 1000;">
+<label>Restaurant Name:</label>
+<input id="restaurantName" placeholder="Enter name" type="text"/>
+<label>Address:</label>
+<input id="restaurantAddress" placeholder="Enter address" type="text"/>
+<label>Category:</label>
+<select id="category">
+<option value="Tacos">Tacos</option>
+<option value="Burgers">Burgers</option>
+<option value="Sushi">Sushi</option>
+<option value="Dessert">Dessert</option>
+<option value="Other">Other</option>
+</select>
+<button onclick="addRestaurant()">Add Restaurant</button>
+</div>
+
+<div id="map" style="width: 100%; height: 100%;"></div>
+<script>
+        var map = L.map("map").setView([29.7604, -95.3698], 11);
+        
+        // Simplified map tile layer
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // Define category colors
+        var categoryColors = {
+            "Tacos": "red",
+            "Burgers": "blue",
+            "Sushi": "purple",
+            "Dessert": "pink",
+            "Other": "orange",
+            "Home": "darkgreen"
+        };
+
+        // Define locations by category
+        var locations = {
+            "Tacos": [
+                {name: "Carniceria Aguascalientes", coords: [29.7071, -95.2552]},
+                {name: "Tio Trompo", coords: [29.7701, -95.4093]},
+                {name: "Tacos Los Gorditos", coords: [29.6698, -95.2982]},
+                {name: "Tres Chiles", coords: [29.9223, -95.4449]},
+                {name: "Laredo Taqueria", coords: [29.7706, -95.3722]},
+                {name: "Tacos Frontera", coords: [29.8496, -95.6445]},
+                {name: "La Calle", coords: [29.7605, -95.3627]},
+                {name: "El Jardin", coords: [29.7273, -95.2857]},
+                {name: "Cochinita and Co", coords: [29.7144, -95.3057]}
+            ],
+            "Burgers": [
+                {name: "Stuffed Belly", coords: [29.7505, -95.3730]},
+                {name: "Rodeo Goat", coords: [29.7706, -95.3792]},
+                {name: "Juicy Joint Burgers", coords: [29.7438, -95.3996]}
+            ],
+            "Sushi": [
+                {name: "Azumi", coords: [29.7525, -95.3703]},
+                {name: "Oma Sushi", coords: [29.7609, -95.3610]},
+                {name: "Uchiko", coords: [29.7483, -95.3875]},
+                {name: "Kira", coords: [29.7431, -95.3850]},
+                {name: "Kaiten Sushi Ginza", coords: [29.7662, -95.3815]},
+                {name: "Teppay", coords: [29.7500, -95.3620]}
+            ],
+            "Dessert": [
+                {name: "Tiny’s Milk and Cookies", coords: [29.7508, -95.4283]},
+                {name: "Honeychilds Sweet Dreams", coords: [29.7532, -95.3657]}
+            ],
+            "Other": [
+                {name: "Astor Farm to Table", coords: [29.7496, -95.7505]},
+                {name: "Bungalow (Steakhouse)", coords: [29.7628, -95.3633]},
+                {name: "Baso", coords: [29.8030, -95.4132]},
+                {name: "Zoa Moroccan Kitchen", coords: [29.7006, -95.4807]},
+                {name: "Leighton’s House of Lamb", coords: [29.7281, -95.3560]},
+                {name: "Makiin (Thai)", coords: [29.7378, -95.4173]},
+                {name: "Meat Mojo", coords: [29.7586, -95.3968]},
+                {name: "Oporto Fooding House", coords: [29.7439, -95.3996]},
+                {name: "Uncle Lees Cafe", coords: [29.6821, -95.6448]},
+                {name: "Stone Age Street Food", coords: [29.7043, -95.5563]},
+                {name: "Garosu Korean BBQ", coords: [29.7008, -95.5900]},
+                {name: "Squable", coords: [29.8028, -95.4124]},
+                {name: "Boulevard Seafood", coords: [29.2853, -94.7955]},
+                {name: "Caribbean Hot Pot", coords: [29.9882, -95.4513]}
+            ],
+            "Home": [
+                {name: "61 River Creek Way, Sugar Land, TX 77478", coords: [29.5995, -95.6154]},
+                {name: "5131 Cypress Spring Dr, Missouri City, TX 77459", coords: [29.5263, -95.5391]},
+                {name: "626 Shorewood Dr, Seabrook, TX 77586", coords: [29.5739, -95.0194]}
+            ]
+        };
+
+        // Add markers for each category
+        Object.keys(locations).forEach(category => {
+            locations[category].forEach(spot => {
+                var icon = L.AwesomeMarkers.icon({
+                    extraClasses: "fa-rotate-0",
+                    icon: category === "Home" ? "home" : "cutlery",
+                    iconColor: "white",
+                    markerColor: categoryColors[category],
+                    prefix: "fa"
+                });
+                L.marker(spot.coords).addTo(map).setIcon(icon).bindPopup("<b>" + spot.name + "</b>");
+            });
+        });
+
+        // Add legend
+        var legend = L.control({ position: "topright" });
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create("div", "info legend");
+            Object.keys(categoryColors).forEach(cat => {
+                div.innerHTML += '<div style="display: flex; align-items: center;"><div style="width: 12px; height: 12px; background:' + categoryColors[cat] + '; margin-right: 5px;"></div> ' + cat + '</div><br>';
+            });
+            return div;
+        };
+        legend.addTo(map);
+    </script>
+
+<script>
+    function addRestaurant() {
+        var name = document.getElementById("restaurantName").value;
+        var address = document.getElementById("restaurantAddress").value;
+        var category = document.getElementById("category").value;
+
+        if (name === "" || address === "") {
+            alert("Please enter both name and address.");
+            return;
+        }
+
+        // Use OpenStreetMap's Nominatim API to geocode the address
+        fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(address))
+            .then(response => response.json())
+            .then(data => {
+                if (data.length === 0) {
+                    alert("Address not found. Please try again.");
+                    return;
+                }
+                
+                var lat = data[0].lat;
+                var lon = data[0].lon;
+
+                var icon = L.AwesomeMarkers.icon({
+                    extraClasses: "fa-rotate-0",
+                    icon: "cutlery",
+                    iconColor: "white",
+                    markerColor: categoryColors[category],
+                    prefix: "fa"
+                });
+
+                L.marker([lat, lon]).addTo(map).setIcon(icon).bindPopup("<b>" + name + "</b> (" + category + ")");
+
+                alert("Restaurant added successfully!");
+            })
+            .catch(error => {
+                alert("Error fetching location. Please try again.");
+            });
+    }
+</script>
+</body>
+</html>
